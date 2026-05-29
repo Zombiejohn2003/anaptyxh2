@@ -7,6 +7,7 @@ from app.models import Measurement, MeasurementCategory, Sensor, User
 
 
 def seed():
+    # Recreates the demo database so every setup starts from known users/sensors/readings.
     app = create_app()
     with app.app_context():
         db.drop_all()
@@ -59,6 +60,7 @@ def seed():
         db.session.add_all(sensors)
         db.session.flush()
 
+        # Generate three days of hourly data so the charts have realistic history.
         base_time = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0) - timedelta(days=3)
         measurements = []
         for index in range(72):

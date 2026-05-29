@@ -27,6 +27,7 @@ def current_user():
         return None
 
 
+# Reusable guard for endpoints that must only be used by administrators.
 def admin_required(fn):
     @wraps(fn)
     @jwt_required()
@@ -49,6 +50,7 @@ def parse_datetime(value):
     return parsed
 
 
+# Sensor forms can submit category ids or codes; normalize both to model objects.
 def get_categories_from_payload(payload):
     category_ids = payload.get("category_ids") or []
     category_codes = payload.get("category_codes") or []
@@ -100,6 +102,7 @@ def handle_value_error(error):
 
 @api.post("/auth/login")
 def login():
+    # On successful password check, issue a JWT that the React app sends on later requests.
     payload = request.get_json() or {}
     username = payload.get("username", "").strip()
     password = payload.get("password", "")
@@ -130,9 +133,11 @@ def categories():
 @api.get("/dashboard")
 @jwt_required()
 def dashboard():
+    # Build all high-level dashboard widgets from the same normalized database data.
     sensors = Sensor.query.order_by(Sensor.identifier).all()
     active_count = sum(1 for sensor in sensors if sensor.status == "active")
 
+    # Average values per category feed the summary cards.
     average_rows = (
         db.session.query(MeasurementCategory.code, func.avg(Measurement.value))
         .join(Measurement, Measurement.category_id == MeasurementCategory.id)
@@ -141,6 +146,7 @@ def dashboard():
     )
     averages = {code: round(float(average), 2) for code, average in average_rows}
 
+    # Counts per measurement category feed the pie chart.
     type_rows = (
         db.session.query(MeasurementCategory.name, func.count(sensor_categories.c.sensor_id))
         .join(sensor_categories, sensor_categories.c.category_id == MeasurementCategory.id)
@@ -243,6 +249,7 @@ def delete_sensor(sensor_id):
 @api.get("/sensors/<int:sensor_id>/measurements")
 @jwt_required()
 def sensor_measurements(sensor_id):
+    # date_trunc lets PostgreSQL aggregate the time-series by hour, day, or month.
     sensor = db.session.get(Sensor, sensor_id)
     if not sensor:
         return {"message": "Sensor not found."}, 404
@@ -277,6 +284,7 @@ def sensor_measurements(sensor_id):
 
 @api.post("/measurements/ingest")
 def ingest_measurement():
+    # Bonus endpoint for external devices/services; protected with a simple API key.
     api_key = request.headers.get("X-API-Key")
     if api_key != current_app.config["INGEST_API_KEY"]:
         return {"message": "Invalid ingestion API key."}, 401

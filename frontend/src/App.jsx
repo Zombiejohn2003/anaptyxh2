@@ -53,6 +53,7 @@ function formatDate(value) {
 }
 
 function App() {
+  // Token in localStorage keeps the session after refresh; invalid tokens return to login.
   const [token, setToken] = useState(() => localStorage.getItem('sensorToken'))
   const [user, setUser] = useState(null)
   const [booting, setBooting] = useState(Boolean(token))
@@ -140,6 +141,7 @@ function LoginPage({ error, onLogin }) {
 }
 
 function Dashboard({ user, onLogout }) {
+  // This component owns the dashboard data and the temporary admin edit forms.
   const [dashboard, setDashboard] = useState(null)
   const [categories, setCategories] = useState([])
   const [selectedSensorId, setSelectedSensorId] = useState(null)
@@ -147,6 +149,8 @@ function Dashboard({ user, onLogout }) {
   const [editingUser, setEditingUser] = useState(null)
   const [notice, setNotice] = useState('')
   const isAdmin = user.role === 'admin'
+
+  // Admin-only UI is hidden for simple users; the backend still enforces the same rule.
 
   async function refresh() {
     const [dashboardData, categoryData] = await Promise.all([getDashboard(), getCategories()])
@@ -365,6 +369,7 @@ function SensorTable({ sensors, isAdmin, onOpen, onEdit, onDelete }) {
 }
 
 function SensorForm({ sensor, categories, onCancel, onSave }) {
+  // Categories come from the database, satisfying the dynamic category requirement.
   const [form, setForm] = useState(sensor)
   const [error, setError] = useState('')
 
@@ -484,6 +489,7 @@ function UserForm({ user, onCancel, onSave }) {
 }
 
 function SensorDetail({ sensorId, user, onBack, onLogout }) {
+  // Detail view fetches metadata once and re-fetches measurements when resolution changes.
   const [sensor, setSensor] = useState(null)
   const [resolution, setResolution] = useState('hour')
   const [measurements, setMeasurements] = useState([])
@@ -499,6 +505,7 @@ function SensorDetail({ sensorId, user, onBack, onLogout }) {
       .catch(() => setError('Could not load measurements'))
   }, [sensorId, resolution])
 
+  // Recharts expects one object per period, so API rows are grouped by timestamp label.
   const chartData = useMemo(() => {
     const grouped = new Map()
     measurements.forEach((row) => {

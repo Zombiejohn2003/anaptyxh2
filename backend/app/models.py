@@ -5,6 +5,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from .extensions import db
 
 
+# Many-to-many table: one sensor can report multiple measurement categories
+# (for example both temperature and humidity).
 sensor_categories = db.Table(
     "sensor_categories",
     db.Column("sensor_id", db.Integer, db.ForeignKey("sensors.id", ondelete="CASCADE"), primary_key=True),
@@ -12,6 +14,7 @@ sensor_categories = db.Table(
 )
 
 
+# Application accounts. The role field drives what each user can do in the API/UI.
 class User(db.Model):
     __tablename__ = "users"
 
@@ -42,6 +45,7 @@ class User(db.Model):
         }
 
 
+# Categories are database rows so the frontend can load them dynamically in forms.
 class MeasurementCategory(db.Model):
     __tablename__ = "measurement_categories"
 
@@ -54,6 +58,7 @@ class MeasurementCategory(db.Model):
         return {"id": self.id, "code": self.code, "name": self.name, "unit": self.unit}
 
 
+# Sensor metadata. Actual historical readings live in Measurement rows below.
 class Sensor(db.Model):
     __tablename__ = "sensors"
 
@@ -85,6 +90,7 @@ class Sensor(db.Model):
         return payload
 
 
+# One recorded reading for one sensor and one category at a specific time.
 class Measurement(db.Model):
     __tablename__ = "measurements"
 

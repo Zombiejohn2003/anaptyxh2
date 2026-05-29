@@ -1,9 +1,11 @@
 import axios from 'axios'
 
+// Central Axios client: all React API calls use the same base URL and auth header.
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
 })
 
+// After login/logout we update the Authorization header used by protected Flask routes.
 export function setAuthToken(token) {
   if (token) {
     client.defaults.headers.common.Authorization = `Bearer ${token}`
@@ -37,6 +39,7 @@ export async function getSensor(sensorId) {
   return data.sensor
 }
 
+// The resolution parameter controls server-side grouping: hour, day, or month.
 export async function getSensorMeasurements(sensorId, resolution) {
   const { data } = await client.get(`/sensors/${sensorId}/measurements`, { params: { resolution } })
   return data.measurements
